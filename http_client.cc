@@ -13,7 +13,7 @@ class HttpResponse
 {
 public:
   HttpResponse(){};
-  HttpResponse(std::string resp) : resp_(resp){};
+  HttpResponse(std::string resp) : resp_(resp){ /*fprintf(stderr, "%s\n",resp_.c_str());*/ };
   int status();
   std::string body();
 private:
@@ -41,7 +41,7 @@ int main(int argc, char **argv)
 {
   if (argc < 2)
   {
-    fprintf(stderr,"usage: <SERVER> <REQUEST> <Param1> [Param2] ... [ParamN]\n");
+    fprintf(stderr,"usage: <SERVER> <REQUEST> <Param1> [Param2] ... [ParamN]\r\n");
     return 1;
   }
 
@@ -62,11 +62,11 @@ int main(int argc, char **argv)
   else if (req == "options")  rsp = c.OPTIONS(argv[3]);
   else
   {
-    fprintf(stderr, "unrecognized http operation: %s\n", argv[2]);
+    fprintf(stderr, "unrecognized http operation: %s\r\n", argv[2]);
     return 2;
   }
 
-  fprintf(stderr,"response-code: %d\nresponse-contents: %s\n", rsp.status(), rsp.body().c_str());
+  fprintf(stderr,"response-code: %d\r\nresponse-contents: %s\r\n", rsp.status(), rsp.body().c_str());
 
   sockQuit();
   return 0;
@@ -74,15 +74,16 @@ int main(int argc, char **argv)
 
 std::string HttpResponse::body()
 {
-  auto ind = resp_.find("\n\n");
-  return resp_.substr(ind);
+  auto ind = resp_.find("\r\n\r\n");
+  return resp_.substr(ind+4);
 }
 
 int HttpResponse::status()
 {
   auto ind1 = resp_.find(' ');
-  auto ind2 = resp_.find(' ', ind1);
+  auto ind2 = resp_.find(' ', ind1+1);
   std::string code = resp_.substr(ind1,ind2-ind1);
+  //fprintf(stderr, "inds: %d %d code; %s\n",ind1, ind2, code);
   return std::stoi(code);
 }
 
@@ -134,42 +135,42 @@ std::string rcv(const sock_t &sock)
 
 HttpResponse HttpClient::HEAD(std::string resource)
 {
-  auto req = fmt::format("HEAD {} HTTP/1.1\nAccept: application/json\nHost: {}\n", resource, server_);
+  auto req = fmt::format("HEAD {} HTTP/1.1\r\nAccept: application/json\r\nHost: {}\r\n\r\n", resource, server_);
   send(sock_, req.c_str(), req.size(), 0);
   return {rcv(sock_)};
 }
 
 HttpResponse HttpClient::GET(std::string resource)
 {
-  auto req = fmt::format("GET {} HTTP/1.1\nHost: {}\n", resource, server_);
+  auto req = fmt::format("GET {} HTTP/1.1\r\nHost: {}\r\n\r\n", resource, server_);
   send(sock_, req.c_str(), req.size(), 0);
   return {rcv(sock_)};
 }
 
 HttpResponse HttpClient::POST(std::string resource, std::string content_type, std::string content)
 {
-  auto req = fmt::format("POST {} HTTP/1.1\nHost: {}\nContent-Type: {}\nContent-Length: {}\n\n{}", resource, server_, content_type, content.size(),content);
+  auto req = fmt::format("POST {} HTTP/1.1\r\nHost: {}\r\nContent-Type: {}\r\nContent-Length: {}\r\n\r\n{}\r\n\r\n", resource, server_, content_type, content.size(),content);
   send(sock_, req.c_str(), req.size(), 0);
   return {rcv(sock_)};
 }
 
 HttpResponse HttpClient::PUT(std::string resource, std::string content_type, std::string content)
 {
-  auto req = fmt::format("PUT {} HTTP/1.1\nHost: {}\nContent-Type: {}\nContent-Length: {}\n\n{}", resource, server_, content_type, content.size(),content);
+  auto req = fmt::format("PUT {} HTTP/1.1\r\nHost: {}\r\nContent-Type: {}\r\nContent-Length: {}\r\n\r\n{}\r\n\r\n", resource, server_, content_type, content.size(),content);
   send(sock_, req.c_str(), req.size(), 0);
   return {rcv(sock_)};
 }
 
 HttpResponse HttpClient::DELETE(std::string resource)
 {
-  auto req = fmt::format("DELETE {} HTTP/1.1\nHost: {}\n", resource, server_);
+  auto req = fmt::format("DELETE {} HTTP/1.1\r\nHost: {}\r\n\r\n", resource, server_);
   send(sock_, req.c_str(), req.size(), 0);
   return {rcv(sock_)};
 }
 
 HttpResponse HttpClient::OPTIONS(std::string resource)
 {
-  auto req = fmt::format("OPTIONS {} HTTP/1.1\nHost: {}\n", resource, server_);
+  auto req = fmt::format("OPTIONS {} HTTP/1.1\r\nHost: {}\r\n\r\n", resource, server_);
   send(sock_, req.c_str(), req.size(), 0);
   return {rcv(sock_)};
 }
