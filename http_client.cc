@@ -117,18 +117,19 @@ std::string rcv(const sock_t &sock)
 
   std::string rsp;
   constexpr size_t MaxBufLen = 4096;
-  std::vector<char> buffer(MaxBufLen);
+  char buffer[MaxBufLen];
   int recvlen = 0;
 
   do {
-    recvlen = recv(sock, &buffer[0], buffer.size(), 0);
+    recvlen = recv(sock, buffer, MaxBufLen, 0);
+    //fprintf(stderr, "%d\n", recvlen);
     if (recvlen == -1)
       return {""};
     else
     {
-      rsp.append(buffer.cbegin(), buffer.cend());
+      rsp.append(buffer, buffer + recvlen);
     }
-  } while (recvlen == MaxBufLen);
+  } while (recvlen == MaxBufLen); // TODO: Continue recv-ing based on contents of chunk
 
   return rsp;
 }

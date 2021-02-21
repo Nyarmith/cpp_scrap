@@ -1,0 +1,20 @@
+canonical get response looks like:
+
+HTTP/1.1 200 OK
+Date: Sun, 21 Feb 2021 17:31:17 GMT
+Expires: -1
+Cache-Control: private, max-age=0
+Content-Type: text/html; charset=ISO-8859-1
+P3P: CP="This is not a P3P policy! See g.co/p3phelp for more info."
+Server: gws
+X-XSS-Protection: 0
+X-Frame-Options: SAMEORIGIN
+Set-Cookie: 1P_JAR=2021-02-21-17; expires=Tue, 23-Mar-2021 17:31:17 GMT; path=/; domain=.google.com; Secure
+Set-Cookie: NID=209=n9LHmCNnx_cZpE_qvopjKbSHtXTXmrGHBaOkzstc60kVIUcclU_Dk7P3zqt2gJaHq1n0hknGgc7ERgDCzbgz1D2c6J51Iw4yQ6DeeI7oJsrydodmjZYpwfROkcuPx1hHI1PXzm8ZDNrQNS0iKVQRGj2sjqt_ircaJi8lRL3ci2I; expires=Mon, 23-Aug-2021 17:31:17 GMT; path=/; domain=.google.com; HttpOnly
+Accept-Ranges: none
+Vary: Accept-Encoding
+Transfer-Encoding: chunked
+
+
+5507
+<!doctype html><html itemscope="" itemtype="http://schema.org/WebPage" lang="en"><head><meta content="Search the world's information, including webpages, images, videos and more. Google has many special features to help you find exactly what you're looking for." name="description"><meta content="noodp" name="robots"><meta content="text/html; charset=UTF-8" http-equiv="Content-Type"><meta content="/images/branding/googleg/1x/googleg_standard_color_128dp.png" itemprop="image"><title>Google</title><script nonce="I9B8cuBsmZ/UQuIeRPJTig==">(function(){window.google={kEI:'xpgyYKqVN6Tp_QbYwrDACw',kEXPI:'0,1302433,7,56969,954,5105,206,4804,2316,383,246,5,1354,4042,894,314,1666,67
