@@ -1,13 +1,18 @@
 #include "networking.h"
+
+#include <algorithm>
+#include <unordered_map>
+#include <vector>
+#include <string>
 #include <cstdio>
 #include <cctype>
-#include <string>
-#include <unordered_map>
-#include <format>
+
+#include <fmt/core.h>
 
 class HttpResponse
 {
 public:
+  HttpResponse(){};
   HttpResponse(std::string resp) : resp_(resp){};
   int status();
   std::string body();
@@ -18,8 +23,8 @@ private:
 class HttpClient
 {
 public:
-  HttpRequest(std::string server);
-  ~HttpRequest();
+  HttpClient(std::string server);
+  ~HttpClient();
   HttpResponse HEAD(std::string resource);
   HttpResponse GET(std::string resource);
   HttpResponse POST(std::string resource, std::string content_type, std::string content);
@@ -29,51 +34,51 @@ public:
 
 private:
   std::string server_;
-  sock_t socket_;
+  sock_t sock_;
 };
 
 int main(int argc, char **argv)
 {
   if (argc < 2)
   {
-    fprintf("usage: <SERVER> <REQUEST> <Param1> [Param2] ... [ParamN]");
+    fprintf(stderr,"usage: <SERVER> <REQUEST> <Param1> [Param2] ... [ParamN]\n");
     return 1;
   }
 
   sockInit();
 
-  std::string uri(argv[0]);
+  std::string uri(argv[1]);
   HttpClient c(uri);
 
-  std::string req(argv[1]);
+  std::string req(argv[2]);
   std::transform(req.begin(), req.end(), req.begin(), [](unsigned char c) { return std::tolower(c); });
 
   HttpResponse rsp;
-  if (req == "head")          rsp = c.HEAD(argv[2]);
-  else if (req == "get")      rsp = c.GET(argv[2]);
-  else if (req == "post")     rsp = c.POST(argv[2], argv[3], argv[4]);
-  else if (req == "put")      rsp = c.PUT(argv[2], argv[3], argv[4]);
-  else if (req == "delete")   rsp = c.DELETE(argv[2]);
-  else if (req == "options")  rsp = c.OPTIONS(argv[2]);
+  if (req == "head")          rsp = c.HEAD(argv[3]);
+  else if (req == "get")      rsp = c.GET(argv[3]);
+  else if (req == "post")     rsp = c.POST(argv[3], argv[4], argv[5]);
+  else if (req == "put")      rsp = c.PUT(argv[3], argv[4], argv[5]);
+  else if (req == "delete")   rsp = c.DELETE(argv[3]);
+  else if (req == "options")  rsp = c.OPTIONS(argv[3]);
   else
   {
     fprintf(stderr, "unrecognized http operation: %s\n", argv[1]);
     return 2;
   }
 
-  fprintf("response-code: %d\nresponse-contents: %s\n", rsp.status(), rsp.body().c_str());
+  fprintf(stderr,"response-code: %d\nresponse-contents: %s\n", rsp.status(), rsp.body().c_str());
 
   sockQuit();
   return 0;
 }
 
-HttpResponse::body()
+std::string HttpResponse::body()
 {
   auto ind = resp_.find("\n\n");
   return resp_.substr(ind);
 }
 
-HttpResponse::status()
+int HttpResponse::status()
 {
   auto ind1 = resp_.find(' ');
   auto ind2 = resp_.find(' ', ind1);
@@ -88,7 +93,7 @@ HttpClient::HttpClient(std::string server)
   hints.ai_socktype = SOCK_STREAM;
 
   // find matching destinations
-  int status = getaddrinfo(address, 80, &hints, &serv);
+  int status = getaddrinfo(server.c_str(), "80", &hints, &serv);
 
   // go through matches
   struct addrinfo *p;
@@ -99,7 +104,7 @@ HttpClient::HttpClient(std::string server)
     break;
   }
   if (p == NULL)
-    throw std::runtime_error("Couldn't Connect to Server");
+    throw std::runtime_error("Couldn't Connect to Server " + server);
 };
 
 std::string rcv(const sock_t &sock)
@@ -112,7 +117,7 @@ std::string rcv(const sock_t &sock)
 
   do {
     recvlen = recv(sock, &buffer[0], buffer.size(), 0);
-    if (rlen == -1)
+    if (recvlen == -1)
       return {""};
     else
       rsp.append(buffer.cbegin(), buffer.cend());
@@ -123,42 +128,47 @@ std::string rcv(const sock_t &sock)
 
 HttpResponse HttpClient::HEAD(std::string resource)
 {
-  auto req = std::format("HEAD {} HTTP/1.1\nAccept: application/json\nHost: {}\n", resource, server_);
+  auto req = fmt::format("HEAD {} HTTP/1.1\nAccept: application/json\nHost: {}\n", resource, server_);
   send(sock_, req.c_str(), req.size(), 0);
   return {rcv(sock_)};
 }
 
 HttpResponse HttpClient::GET(std::string resource)
 {
-  auto req = std::format("GET {} HTTP/1.1\nHost: {}\n", resource, server_);
+  auto req = fmt::format("GET {} HTTP/1.1\nHost: {}\n", resource, server_);
   send(sock_, req.c_str(), req.size(), 0);
   return {rcv(sock_)};
 }
 
 HttpResponse HttpClient::POST(std::string resource, std::string content_type, std::string content)
 {
-  auto req = std::format("POST {} HTTP/1.1\nHost: {}\nContent-Type: {}\nContent-Length: {}\n\n{}", resource, server_, content_type, content.size(),content);
+  auto req = fmt::format("POST {} HTTP/1.1\nHost: {}\nContent-Type: {}\nContent-Length: {}\n\n{}", resource, server_, content_type, content.size(),content);
   send(sock_, req.c_str(), req.size(), 0);
   return {rcv(sock_)};
 }
 
 HttpResponse HttpClient::PUT(std::string resource, std::string content_type, std::string content)
 {
-  auto req = std::format("PUT {} HTTP/1.1\nHost: {}\nContent-Type: {}\nContent-Length: {}\n\n{}", resource, server_, content_type, content.size(),content);
+  auto req = fmt::format("PUT {} HTTP/1.1\nHost: {}\nContent-Type: {}\nContent-Length: {}\n\n{}", resource, server_, content_type, content.size(),content);
   send(sock_, req.c_str(), req.size(), 0);
   return {rcv(sock_)};
 }
 
 HttpResponse HttpClient::DELETE(std::string resource)
 {
-  auto req = std::format("DELETE {} HTTP/1.1\nHost: {}\n", resource, server_);
+  auto req = fmt::format("DELETE {} HTTP/1.1\nHost: {}\n", resource, server_);
   send(sock_, req.c_str(), req.size(), 0);
   return {rcv(sock_)};
 }
 
 HttpResponse HttpClient::OPTIONS(std::string resource)
 {
-  auto req = std::format("OPTIONS {} HTTP/1.1\nHost: {}\n", resource, server_);
+  auto req = fmt::format("OPTIONS {} HTTP/1.1\nHost: {}\n", resource, server_);
   send(sock_, req.c_str(), req.size(), 0);
   return {rcv(sock_)};
+}
+
+HttpClient::~HttpClient()
+{
+  close(sock_);
 }

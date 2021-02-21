@@ -5,3 +5,4 @@ add_subdirectory(external)
 include_directories(include)
 
 add_executable(http_client http_client.cc)
+target_link_libraries(http_client fmt)
