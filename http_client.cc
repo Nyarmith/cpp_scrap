@@ -62,7 +62,7 @@ int main(int argc, char **argv)
   else if (req == "options")  rsp = c.OPTIONS(argv[3]);
   else
   {
-    fprintf(stderr, "unrecognized http operation: %s\n", argv[1]);
+    fprintf(stderr, "unrecognized http operation: %s\n", argv[2]);
     return 2;
   }
 
@@ -89,6 +89,8 @@ int HttpResponse::status()
 HttpClient::HttpClient(std::string server)
 {
   struct addrinfo hints, *serv;
+
+  memset(&hints, 0, sizeof(hints));
   hints.ai_family = AF_UNSPEC;
   hints.ai_socktype = SOCK_STREAM;
 
@@ -100,11 +102,13 @@ HttpClient::HttpClient(std::string server)
   for (p = serv; p != NULL; p = p->ai_next)
   {
     if ((sock_ = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) continue;
-    if ((connect(sock_,p->ai_addr,p->ai_addrlen)) != 0) { close(sock_); continue; }
+    if ((connect(sock_,p->ai_addr,p->ai_addrlen)) == -1) { close(sock_); continue; }
     break;
   }
   if (p == NULL)
     throw std::runtime_error("Couldn't Connect to Server " + server);
+
+  server_ = server;
 };
 
 std::string rcv(const sock_t &sock)
@@ -120,7 +124,9 @@ std::string rcv(const sock_t &sock)
     if (recvlen == -1)
       return {""};
     else
+    {
       rsp.append(buffer.cbegin(), buffer.cend());
+    }
   } while (recvlen == MaxBufLen);
 
   return rsp;
